@@ -1,0 +1,107 @@
+The way forward
+
+https://medium.com/coinmonks/test-hyperledger-fabric-chaincode-in-dev-environment-8794096b5df2
+
+
+Download the folder hlf-chaincode-dev in below mentioned path  --Do NOT change the path
+$HOME/hyperledger/fabric-samples/
+
+
+copy your chaincode in the folder inside hlf-chaincode-dev/chaincode
+
+now run below commands
+----------------------
+
+docker-compose -f docker-compose.yaml up -d
+
+
+There will be below mentioned container launched 
+
+CONTAINER ID        IMAGE                        COMMAND                  CREATED             STATUS              PORTS                                            NAMES
+7db17b656fc8        hyperledger/fabric-ccenv     "/bin/bash -c 'sleep…"   5 hours ago         Up 5 hours                                                           chaincode
+42c5bb7196bf        hyperledger/fabric-tools     "/bin/bash -c ./scri…"   5 hours ago         Up 5 hours                                                           cli
+427d8ae4394c        hyperledger/fabric-peer      "peer node start --p…"   5 hours ago         Up 5 hours          0.0.0.0:7051->7051/tcp, 0.0.0.0:7053->7053/tcp   peer
+cbae0a947135        hyperledger/fabric-orderer   "orderer"                5 hours ago         Up 5 hours          0.0.0.0:7050->7050/tcp                           orderer
+
+
+Go inside CHAINCODE container to prepare the build
+docker exec -it chaincode bash
+
+go build -o veritable
+
+CORE_PEER_ADDRESS=peer:7052 CORE_CHAINCODE_ID_NAME=veritable:1 ./veritable
+
+(keep the container running - DO NOT CLOSE)
+
+
+Now open another terminal - SECOND TERMINAL
+----------------------------------------------------
+docker exec -it cli bash
+
+peer chaincode install -p chaincodedev/chaincode/veritable -n veritable -v 1
+
+peer chaincode instantiate -n veritable -v 1 -c '{"Args":["init"]}' -C myc
+
+
+With all dates
+peer chaincode invoke -n veritable -c '{"Args":["CreateUser","{\"userVeritableId\":\"1\",\"userEmailId\":\"malkani.kamal@gmail.com\",\"userType\":1,\"userBusinessName\":\"Find Truth\",\"userFirstName\":\"kamal K\",\"userLastName\":\"malkani\",\"userName\":\"kamal_k\",\"userAddress1\":\"Magarpattacity\",\"userAddress2\":\"Hadapsar\",\"userPhone\":\"9860607410\",\"timeStamp\":\"2006-01-02T15:04:05Z07:00\",\"City\":\"Pune\",\"State\":\"MH\",\"Zip\":\"411014\",\"Country\":\"India\",\"scanReference\":\"xjxxysjsixxjx\",\"notaryPledge\":0,\"notaryPledgeTextHash\":\"xxxxfffzzzzz\",\"userPhotoName\":\"kamalM.jpg\",\"userPhotoURL\":\"C:\/userPhotos\",\"userPhotoHash\":\"xxxxFFFFF\",\"createdDate\":\"2006-01-02T15:04:05Z07:00\",\"updatedDate\":\"2006-01-02T15:04:05Z07:00\",\"deletedDate\":\"2006-01-02T15:04:05Z07:00\"}"]}' -C myc
+
+peer chaincode upgrade -n veritable -v 1.1 -c '{"Args":["init"]}' -C ch1
+
+peer chaincode query -n veritable -c '{"Args":["GetUserByKey","342d1cb069719714e772b8fffe082721ef002181ea77952931e5648789fc7a23"]}' -C myc
+
+
+peer chaincode invoke -n veritable -c '{"Args":["addDocument","342d1cb069719714e772b8fffe082721ef002181ea77952931e5648789fc7a23","{\"userId\":\"\",\"docType\":1,\"docUniqueNum\":\"L1\",\"docName\":\"Find Truth\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"2022-12-20\",\"docAddressLine1\":\"Jasminium\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"41101\",\"docPhone\":\"9860607411\",\"docStatus\":0,\"docCounty\":\"CA\",\"docImageName\":\"L0018899.jpg\",\"docImageURL\":\"C:\/UserDcuments\/\",\"docImageHash\":\"xxxFFFFFXXXzzz\",\"createdDate\":\"2022-12-20\",\"updatedDate\":\"2022-12-20\",\"deletedDate\":\"2022-12-20\"}"]}' -C myc
+
+peer chaincode invoke -n veritable -c '{"Args":["addStamp","342d1cb069719714e772b8fffe082721ef002181ea77952931e5648789fc7a23","{\"userID\":\"\",\"docID\":\"\",\"notaryStampId\":\"1\",\"stampFileName\":\"agb.jpg\",\"stampName\":\"abc\",\"stampURL\":\"c:\/abd\/\",\"stampFileHash\":\"xxxkxkjxjox\",\"createdDate\":\"2020-12-20\",\"updatedDate\":\"2020-12-20\",\"deletedDate\":\"2020-12-20\"}"]}' -C myc
+
+
+e7d517bbf39472c5201cad8a8886d38dd104f5e3480bd1f22f7709bfecc5a100
+
+
+
+peer chaincode query -n autonomy_chain -c '{"Args":["query","LA000007"]}' -C myc
+
+
+
+{\"userId\":\"\",\"docType\":1,\"docUniqueNum\":\"L1\",\"docName\":\"Find Truth\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"2022-12-20\",\"docAddressLine1\":\"Jasminium\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"41101\",\"docPhone\":\"9860607411\",\"docStatus\":0,\"docCounty\":\"CA\",\"docImageName\":\"L0018899.jpg\",\"docImageURL\":\"C:\/UserDcuments\/\",\"docImageHash\":\"xxxFFFFFXXXzzz\",\"createdDate\":\"2022-12-20\",\"updatedDate\":\"2022-12-20\",\"deletedDate\":\"2022-12-20\"}
+
+
+--------------------------------------
+TO UPGRADE/CHANGE  THE CHAINCODE 
+--------------------------------------
+
+Go to terminal  where chaincode container cli was open 
+
+Build the new chaincode by using below mentioned command.
+
+go build -o autonomy_chain
+
+
+Now change the version to 2 after autonomy_chain:
+CORE_PEER_ADDRESS=peer:7052 CORE_CHAINCODE_ID_NAME=autonomy_chain:2 ./autonomy_chain
+(keep the container running - DO NOT CLOSE)
+
+
+Now open new terminal - (remember to change the version to 2 where ever it is 1)
+---------
+docker exec -it cli bash
+
+peer chaincode install -p chaincodedev/chaincode/car -n autonomy_chain -v 2
+
+peer chaincode instantiate -n autonomy_chain -v 2 -c '{"Args":["init","5","LA000007","AUDI Blue","Lancastercar","C005","Active","23022020","25022020"]}' -C myc
+
+
+peer chaincode upgrade -n autonomy_chain -v 2 -c '{"Args":["init","5","LA000009","AUDI Blue","Lancastercar","C005","Active","23022020","25022020"]}' -C myc
+
+
+peer chaincode invoke -n autonomy_chain -c '{"Args":["initLedger"]}' -C myc
+
+peer chaincode query -n autonomy_chain -c '{"Args":["query","LA000007"]}' -C myc
+
+peer chaincode query -n autonomy_chain -c '{"Args":["query","LA000007"]}' -C myc
+
+--------
+
+
+

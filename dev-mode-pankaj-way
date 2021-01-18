@@ -1,0 +1,221 @@
+
+Prerequisite for development environement
+---------------------------------------------------------
+https://hyperledger-fabric.readthedocs.io/en/release-1.4/dev-setup/devenv.html
+
+
+ssh-keygen -t rsa -C "malkani-kamal malkani.kamal@gmail.com"
+-------------------------------------------------------------
+passphrase junoo@123
+
+ssh-keygen -t rsa -C "malkani-kamal malkani.kamal@gmail.com"
+Generating public/private rsa key pair.
+Enter file in which to save the key (/home/admin-pc/.ssh/id_rsa): sshkamal
+Enter passphrase (empty for no passphrase): 
+Enter same passphrase again: 
+Your identification has been saved in sshkamal.
+Your public key has been saved in sshkamal.pub.
+The key fingerprint is:
+SHA256:O9sMq/x8jZpVHzgd4ipo22K4e08y5TWz+9R3AkVA/rA malkani-kamal malkani.kamal@gmail.com
+The key's randomart image is:
++---[RSA 2048]----+
+|           .o..  |
+|           . .   |
+|            + o  |
+|           . O . |
+|        S + E +  |
+|       + o * = . |
+|     .= B +o. + o|
+|    .o+B @oo.  o.|
+|    o=+=Xo+..    |
++----[SHA256]-----+
+
+
+-----------------------------------
+
+ssh-add ~/.ssh/sshkamal
+-----------------------------------
+
+
+admin-pc@adminpc-Latitude-E5440:~$ ssh-add ~/.ssh/sshkamal
+Enter passphrase for /home/admin-pc/.ssh/sshkamal: 
+Identity added: /home/admin-pc/.ssh/sshkamal (/home/admin-pc/.ssh/sshkamal)
+admin-pc@adminpc-Latitude-E5440:~$ 
+
+
+
+cd $GOPATH/src/github.com/hyperledger/fabric
+make dist-clean all
+-------------------------------------------------------------------------------------------------
+Click on gerrit
+
+    Go to Gerrit.
+    https://gerrit.hyperledger.org/r/#/admin/projects/fabric
+
+    Click on your account name in the upper right corner.
+    From the pop-up menu, select Settings.
+    On the left side menu, click on SSH Public Keys.
+    Paste the contents of your public key ~/.ssh/id_rsa.pub and click Add key.
+
+git clone ssh://malkani.kamal@gmail.com@gerrit.hyperledger.org:29418/fabric && scp -p -P 29418 malkani.kamal@gmail.com@gerrit.hyperledger.org:hooks/commit-msg fabric/.git/hooks/
+
+-------------------------------------------------------------
+last step is to build the hyperledger fabric
+----------------------------------------------------------------
+Building Hyperledger Fabric
+https://hyperledger-fabric.readthedocs.io/en/release-1.4/dev-setup/build.html
+
+
+cd $GOPATH/src/github.com/hyperledger/fabric
+make dist-clean all
+-----------------------------------------------------------------------------
+
+
+Add the hyperledger/fabric-sample/bin path to .profile.  For that go to home directory.
+$cd ~
+$nano .profile
+
+Add below line before any colon 
+/home/admin-pc/hyperledger/fabric-samples/bin 
+Add colon.  It should look like this
+"/home/admin-pc/bin:/usr/local/go/bin:/home/admin-pc/.local/bin:/home/admin-pc/hyperledger/fabric-samples/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/home/admin-pc/go/bin"
+ 
+
+Also give permissing to /var folder
+
+$sudo chown -R $USER /var
+
+
+cd go/src/github.com/hyperledger/fabric/sampleconfig
+
+Do the cleanup first
+------------------------------------
+1. cd /var/hyperledger/production
+rm -rf *
+
+2. cd ~/go/src/github.com/hyperledger/fabric/sampleconfig
+rm ch1.block
+rm ch1.tx
+
+3. cd ~/go/src/veritable
+rm veritable  (the executable generated in step number 3)
+lastls
+
+docker kill $(docker ps -aq)
+docker rm $(docker ps -aq)
+--------------------------------------------
+
+
+Terminal 1
+cd ~/go/src/github.com/hyperledger/fabric/sampleconfig
+ORDERER_GENERAL_GENESISPROFILE=SampleDevModeSolo orderer
+
+Terminal 2
+(Only first time)
+nano docker-compose-couch.yaml  (code for the file is given in the last of the file)
+
+Start Terminal 2
+cd ~/go/src/github.com/hyperledger/fabric/sampleconfig
+
+docker-compose -f docker-compose-couch.yaml up -d
+
+
+CORE_PEER_CHAINCODELISTENADDRESS=0.0.0.0:7052 CORE_LEDGER_STATE_STATEDATABASE=CouchDB CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=127.0.0.1:5984 peer node start --peer-chaincodedev=true
+
+--CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=admin CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=admin peer node start --peer-chaincodedev=true
+
+Note:
+This type of error will come which need to be ignore.  After 8 10 times it will work and peer will run. 
+2019-10-27 03:25:43.080 EDT [kvledger] NewProvider -> INFO 004 ledger provider Initialized
+2019-10-27 03:25:44.170 EDT [couchdb] handleRequest -> WARN 005 Retrying couchdb request in 125ms. Attempt:1  Error:Get http://127.0.0.1:5984/: read tcp 127.0.0.1:38240->127.0.0.1:5984: read: connection reset by peer
+2019-10-27 03:25:44.295 EDT [couchdb] handleRequest -> WARN 006 Retrying couchdb request in 250ms. Attempt:2  Error:Get http://127.0.0.1:5984/: read tcp 127.0.0.1:38256->127.0.0.1:5984: read: connection reset by peer
+
+
+
+
+Terminal 3
+(only first time to copy chaincode) copy all chaincode folder i.e. doctor person to below mentioned folder  
+cp -R * ~/go/src/
+
+cd ~/go/src/veritable
+
+$ go build -o veritable  --To create the executable which will be used in next command with ./
+CORE_CHAINCODE_LOGLEVEL=debug CORE_PEER_ADDRESS=127.0.0.1:7052 CORE_CHAINCODE_ID_NAME=veritable:1.6 ./veritable
+
+--/home/admin-pc/go/src/chaincode
+
+Terminal 4
+
+cd ~/go/src/github.com/hyperledger/fabric/sampleconfig
+
+--export FABRIC_CFG_PATH=$PWD
+--export CC_SRC_PATH="github.com/chaincode/doctor"
+peer chaincode install -n veritable -v 1.6 -p veritable
+
+configtxgen -channelID ch1 -outputCreateChannelTx ch1.tx -profile SampleSingleMSPChannel
+
+peer channel create -o 127.0.0.1:7050 -c ch1 -f ch1.tx
+
+peer channel join -b ch1.block
+
+
+peer chaincode instantiate -n veritable -v 0 -c '{"Args":["init"]}' -C ch1
+
+
+With all dates
+peer chaincode invoke -n veritable -c '{"Args":["CreateUser","{\"userVeritableId\":\"1\",\"userEmailId\":\"kajkdjalkjdkjajd@gmail.com\",\"userType\":1,\"userBusinessName\":\"ABCDEFGHIJKLMNO\",\"userFirstName\":\"ABCDEFGHIJKLMNO\",\"userLastName\":\"ABCDEFGHIJKLMNO\",\"userName\":\"ABCDE___FGHIJKLMNO\",\"userAddress1\":\"MagarpattacityABCDEFGHIJKLMNO\",\"userAddress2\":\"HadapsarABCDEFGHIJKLMNO\",\"userPhone\":\"0000000000000\",\"timeStamp\":\"2006-01-02T15:04:05Z07:00\",\"City\":\"PuneABCDEFGHIJKLMNO\",\"State\":\"MHABCDEFGHIJKLMNO\",\"Zip\":\"411014\",\"Country\":\"IndiaABCDEFGHIJKLMNO\",\"scanReference\":\"xjxxysjsixxjxABCDEFGHIJKLMNO\",\"notaryPledge\":0,\"notaryPledgeTextHash\":\"xxxxfffzzzzzABCDEFGHIJKLMNO\",\"userPhotoName\":\"kamalaaaaaaMABCDEFGHIJKLMNO.jpg\",\"userPhotoURL\":\"C:/userPhotos/ABCDEFGHIJKLMNO\",\"userPhotoHash\":\"ABCDEFGHIJKLMNOABCDEFGHIJKLMNO\",\"createdDate\":\"2006-01-02T15:04:05Z07:00\",\"updatedDate\":\"2006-01-02T15:04:05Z07:00\",\"deletedDate\":\"2006-01-02T15:04:05Z07:00\"}"]}' -C ch1
+
+
+
+peer chaincode upgrade -n veritable -v 1.6 -c '{"Args":["init"]}' -C ch1
+
+peer chaincode query -n veritable -c '{"Args":["GetUserByKey","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f"]}' -C ch1
+
+peer chaincode query -n veritable -c '{"Args":["GetUserDetails","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["addDocument","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"docType\":1,\"docUniqueNum\":\"111L22\",\"docName\":\"Find Truth\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"9999-10-10\",\"docAddressLine1\":\"Jasminiumsssssssssssssssssssssssssssssssssssss\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"41101\",\"docPhone\":\"9999999999999900000009860607411\",\"docStatus\":0,\"docCounty\":\"CA\",\"docImageName\":\"111L1.jpg\",\"docImageURL\":\"C:\\/UserDcuments\\/\",\"docImageHash\":\"xxxFFFFFXXXzzz\",\"createdDate\":\"9999-10-10\",\"updatedDate\":\"9999-10-10\",\"deletedDate\":\"9999-10-10\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["addDocument","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"docType\":1,\"docUniqueNum\":\"111L2\",\"docName\":\"Find Truth\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"9999-10-10\",\"docAddressLine1\":\"Jasminiumsssssssssssssssssssssssssssssssssssss\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"41101\",\"docPhone\":\"9999999999999900000009860607411\",\"docStatus\":0,\"docCounty\":\"CA\",\"docImageName\":\"111L2.jpg\",\"docImageURL\":\"C:\\/UserDcuments\\/\",\"docImageHash\":\"ajdjkdjlajdl\",\"createdDate\":\"9999-10-10\",\"updatedDate\":\"9999-10-10\",\"deletedDate\":\"9999-10-10\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["addDocument","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"docType\":1,\"docUniqueNum\":\"111L3\",\"docName\":\"111L3\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"9999-10-10\",\"docAddressLine1\":\"Jasminiumsssssssssssssssssssssssssssssssssssss\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"4881101\",\"docPhone\":\"88888888888888\",\"docStatus\":0,\"docCounty\":\"CA\",\"docImageName\":\"111L3.jpg\",\"docImageURL\":\"C:\\/UserDcuments\\/\",\"docImageHash\":\"DDDDDDDDDDDDDDDDDDD\",\"createdDate\":\"9999-10-10\",\"updatedDate\":\"9999-10-10\",\"deletedDate\":\"9999-10-10\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["addStamp","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"userID\":\"\",\"docUniqueNum\":\"111L1\",\"notaryStampId\":\"1111\",\"stampFileName\":\"agb111.jpg\",\"stampName\":\"a1111bc\",\"stampURL\":\"c:\\/abd\\/\",\"stampFileHash\":\"xxxkxkjxjo11111x\",\"createdDate\":\"2020-12-12\",\"updatedDate\":\"2020-12-12\",\"deletedDate\":\"2020-12-12\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["addStamp","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"userID\":\"\",\"docUniqueNum\":\"111L2\",\"notaryStampId\":\"111\",\"stampFileName\":\"agb222.jpg\",\"stampName\":\"a222bc\",\"stampURL\":\"c:\\/abd\\/\",\"stampFileHash\":\"xxxkxkjxjo222x\",\"createdDate\":\"2020-12-12\",\"updatedDate\":\"2020-12-12\",\"deletedDate\":\"2020-12-12\"}"]}' -C ch1
+
+
+peer chaincode invoke -n veritable -c '{"Args":["updateUser","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"userVeritableId\":\"10\",\"userEmailId\":\"jkm@gmail.com\",\"userType\":1,\"userBusinessName\":\"Finddhc\",\"userFirstName\":\"kamakKKKKKKKKKKKKKKKKKKK\",\"userLastName\":\"malkani\",\"userName\":\"kamal_kkkkkkkkkkkkkkk\",\"userAddress1\":\"Amanora\",\"userAddress2\":\"Manjiri\",\"userPhone\":\"986060741555550\",\"timeStamp\":\"2006-01-02T15:04:05Z07:00\",\"City\":\"Hadapsar\",\"State\":\"MH\",\"Zip\":\"33333411014\",\"Country\":\"India\",\"scanReference\":\"xjxxysjsixxjx\",\"notaryPledge\":0,\"notaryPledgeTextHash\":\"xxxxfffzzzzz\",\"userPhotoName\":\"kamalaaaaaaM.jpg\",\"userPhotoURL\":\"C:\/userPhotos\",\"userPhotoHash\":\"xxxxFFFFF\",\"createdDate\":\"2006-01-02T15:04:05Z07:00\",\"updatedDate\":\"2006-01-02T15:04:05Z07:00\",\"deletedDate\":\"2006-01-02T15:04:05Z07:00\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["expireDocument","f1931e29b121bef93549729e3ec6da28fa1cf58b792bfa5e26eadc09c76584f8","{\"docType\":1,\"docUniqueNum\":\"111L22\",\"docName\":\"Find Truth\",\"docIssuedStateCode\":\"MH\",\"docExpireDate\":\"9999-10-10\",\"docAddressLine1\":\"Jasminiumsssssssssssssssssssssssssssssssssssss\",\"docAddressLine2\":\"Magarpattacity\",\"docTownName\":\"Pune\",\"docPostalCode\":\"41101\",\"docPhone\":\"9999999999999900000009860607411\",\"docStatus\":1,\"docCounty\":\"CA\",\"docImageName\":\"111L2.jpg\",\"docImageURL\":\"C:\\/UserDcuments\\/\",\"docImageHash\":\"ajdjkdjlajdl\",\"createdDate\":\"9999-10-10\",\"updatedDate\":\"9999-10-10\",\"deletedDate\":\"9999-10-10\"}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["createTransaction","{\"tranId\":\"5\",\"transactionType\":1,\"transactionDate\":\"2020-01-01\",\"userVeritableId\":\"1\",\"doc7DigitHash\":\"HZ998ZA\",\"transactionHash\":\"xxyyuuhshdjdhsudhhj\",\"userPhotoName\":\"NotaryProfilePhoto.jpg\",\"userPhotoURL\":\"C:\/NotaryProfilePhotos\/\",\"userPhotoHash\":\"xxxjkjkixjxijkxjxixjk\",\"signers\":[{\"signerWitnessId\":\"1\",\"tranId\":\"1\",\"userVeritableId\":\"1\",\"signerVerificationType\":1,\"signerOrWitness\":1,\"signer4WitnessId\":\"nil\",\"signerWitnessFirstName\":\"signer1\",\"signerWitnessLastName\":\"signer1\",\"signerWitnessEmailid\":\"signer1@gmail.com\",\"signerWitnessScanReference\":\"xxjkjisjijsijsjisj\",\"City\":\"Kullu\",\"State\":\"Himanchal\",\"Zip\":\"889988\",\"signerWitnessPhone\":\"9988776655\",\"signerWitnessAddress1\":\"Hathi Bata Colony\",\"signerWitnessAddress2\":\"Kullu\",\"signerWitnessPhotoFileHash\":\"xjkxjijsiijjldjisj\",\"signerWitnessPhotoFileName\":\"signer1.jpg\",\"signerWitnessPhotoFileURL\":\"C:\/signers\/\"}],\"docAPN\":[{\"apnDocID\":\"1\",\"tranId\":\"1\",\"userVeritableId\":\"1\",\"apnDocName\":\"SALE DEED\",\"apnDocDate\":\"2020-11-28\",\"apnDocFileName\":\"saledeed1.pdf\",\"apnDocAPNNumber\":\"MH01-9999\",\"apnDocType\":1,\"apndocURL\":\"C:\/Deeds\/\",\"apnDocHash\":\"zjkjdljjajdjajjd\"}],\"location\":[{\"locationId\":\"1\",\"Street\":\"Jasminium\",\"City\":\"Pune\",\"State\":\"MH\",\"Country\":\"India\",\"Zip\":\"411001\",\"tranId\":\"1\"}],\"seal\":[{\"sealId\":\"1\",\"stampId\":\"1\",\"docID\":\"L1\",\"tranId\":\"1\"}]}"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["getTranDetails","89c14143b5f37805d94486a475c9ea486b7be6269f1aa94b2cbba2f41220415a"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["getSignerHash","89c14143b5f37805d94486a475c9ea486b7be6269f1aa94b2cbba2f41220415a","1"]}' -C ch1
+
+peer chaincode invoke -n veritable -c '{"Args":["getDocumentHash","89c14143b5f37805d94486a475c9ea486b7be6269f1aa94b2cbba2f41220415a","1"]}' -C ch1
+
+
+peer chaincode invoke -n veritable -c '{"Args":["getTranHash","89c14143b5f37805d94486a475c9ea486b7be6269f1aa94b2cbba2f41220415a"]}' -C ch1
+
+
+89c14143b5f37805d94486a475c9ea486b7be6269f1aa94b2cbba2f41220415a\
+
+# Copyright IBM Corp. All Rights Reserved.
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+version: '2'
+
+services:
+  couchDB:
+    container_name: couchDB
+    image: hyperledger/fabric-couchdb
+    environment:
+      - CORE_LEDGER_STATE_STATEDATABASE=CouchDB
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_COUCHDBADDRESS=127.0.0.1:5984
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_USERNAME=
+      - CORE_LEDGER_STATE_COUCHDBCONFIG_PASSWORD=
+    ports:
+      - "5984:5984"
